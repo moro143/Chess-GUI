@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image
 from PIL import ImageTk
-import time
+import numpy as np
 
 window = tk.Tk()
 
@@ -27,6 +27,7 @@ class Pawn:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
+        self.name = 'Pawn'
 
     def possible_moves(self, posx, posy):
         possible = []
@@ -61,6 +62,7 @@ class King:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
+        self.name = 'King'
 
     def possible_moves(self, posx, posy):
         possible = []
@@ -83,6 +85,7 @@ class Bishop:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
+        self.name = 'Bishop'
 
     def possible_moves(self, posx, posy):
         possible = []
@@ -134,6 +137,7 @@ class Knight:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
+        self.name = 'Knight'
     def possible_moves(self, posx, posy):
         pos = []
         pos.append([posx+2, posy+1])
@@ -162,7 +166,8 @@ class Rook:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
-    
+        self.name = 'Rook'
+
     def possible_moves(self, posx, posy):
         possible = []
         for i in range(posx+1, 8):
@@ -208,6 +213,7 @@ class Queen:
         img = img.resize((int(wimg), int(himg)), Image.ANTIALIAS)
         self.img = ImageTk.PhotoImage(img)
         self.color = color
+        self.name = 'Queen'
 
     def possible_moves(self, posx, posy):
         possible = []
@@ -283,7 +289,7 @@ class Queen:
         return possible
 
 
-def import_board_fen():
+def import_board_fen(text):
     global board
     board = []
     for _ in range(8):
@@ -291,7 +297,7 @@ def import_board_fen():
         for _ in range(8):
             row.append(0)
         board.append(row)
-    text = inputBoardText.get(1.0, "end-1c")
+    
     row = 0
     col = 0
     for i in text:
@@ -338,6 +344,10 @@ def import_board_fen():
             row += int(i)
         draw_board()
 
+def import_board_fen_GUI():
+    text = inputBoardText.get(1.0, "end-1c")
+    import_board_fen(text)
+
 def create_board(canvas, canvas_width, canvas_height, num=8):
     w = canvas_width/num
     h = canvas_height/num
@@ -353,7 +363,7 @@ def create_board(canvas, canvas_width, canvas_height, num=8):
     return w, h
 
 canvasFrame = tk.Frame(window)
-canvasFrame.grid(column=0, row=0)
+canvasFrame.grid(column=1, row=0)
 canvas_width = 500
 canvas_height = 500
 board_canvas = tk.Canvas(canvasFrame, width=canvas_width, height=canvas_height)
@@ -361,12 +371,46 @@ board_canvas.pack()
 wPiece, hPiece = create_board(board_canvas, canvas_width, canvas_height)
 
 menuFrame = tk.Frame(window)
-menuFrame.grid(column=1, row=0)
+menuFrame.grid(column=1, row=1)
+
+playerLabel = tk.Label(menuFrame, text='Player: white')
+playerLabel.grid(column=0, row=0)
+
+def change_player(player):
+    playerLabel['text']=('Player: '+player)
 
 inputBoardText = tk.Text(menuFrame, width=20, height=4)
 inputBoardText.grid(column=0, row=1)
-inputBoardButton = tk.Button(menuFrame, text='Import Fen', command=import_board_fen)
+inputBoardButton = tk.Button(menuFrame, text='Import Fen', command=import_board_fen_GUI)
 inputBoardButton.grid(column=0, row=2)
+
+whitePlayerMethod = 'Player'
+methods = ['Player', 'Random']
+def change_method_white():
+    global whitePlayerMethod, methods
+    whitePlayerMethod = methods[wPlayervar.get()]
+    print(whitePlayerMethod)
+whitePlayerFrame = tk.Frame(window)
+whitePlayerFrame.grid(column=0, row=0)
+wPlayervar = tk.IntVar()
+wPlayer = tk.Radiobutton(whitePlayerFrame, text='Player', value=0, variable=wPlayervar, command=change_method_white)
+wRandom = tk.Radiobutton(whitePlayerFrame, text='Random', value=1, variable=wPlayervar, command=change_method_white)
+wPlayer.pack(anchor=tk.W)
+wRandom.pack(anchor=tk.W)
+
+blackPlayerMethod = 'Player'
+methods = ['Player', 'Random']
+def change_method_black():
+    global blackPlayerMethod, methods
+    blackPlayerMethod = methods[bPlayervar.get()]
+    print(blackPlayerMethod)
+blackPlayerFrame = tk.Frame(window)
+blackPlayerFrame.grid(column=2, row=0)
+bPlayervar = tk.IntVar()
+bPlayer = tk.Radiobutton(blackPlayerFrame, text='Player', value=0, variable=bPlayervar, command=change_method_black)
+bRandom = tk.Radiobutton(blackPlayerFrame, text='Random', value=1, variable=bPlayervar, command=change_method_black)
+bPlayer.pack(anchor=tk.W)
+bRandom.pack(anchor=tk.W)
 
 def draw_pices():
     r = 0
@@ -383,12 +427,38 @@ def draw_board():
     create_board(board_canvas, canvas_width, canvas_height)
     draw_pices()
 
+import_board_fen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
 current_player = 'white'
 board_method = "choose piece"
 possible_moves = []
 choosen_piece_place = []
-def callback(event):
+
+def all_possible_moves(board, color):
+    all_possible_moves = {}
+    for i in range(len(board)):
+        for j in range(len(board[i])):
+            if board[i][j]!=0 and board[i][j].color==color:
+                possible_moves = board[i][j].possible_moves(i, j)
+                if possible_moves != []:
+                    all_possible_moves[i,j] = possible_moves
+    return all_possible_moves
+
+def is_check(board):
+    moves_white = all_possible_moves(board, 'white')
+    moves_black = all_possible_moves(board, 'black')
+    for i in range(len(board)):
+        for j in range(len(board[i])):
+            if board[i][j]!=0 and board[i][j].name == 'King':
+                for m in moves_white.values():
+                    if [i, j] in m:
+                        return True
+                for m in moves_black.values():
+                    if [i, j] in m:
+                        return True
+    return False
+
+def playerMethod(event):
     global board_method, possible_moves, choosen_piece_place, current_player
     tile = [int(event.x//wPiece), int(event.y//hPiece)]
     draw_board()
@@ -405,14 +475,54 @@ def callback(event):
             board[tile[1]][tile[0]] = board[choosen_piece_place[0]][choosen_piece_place[1]]
             board[choosen_piece_place[0]][choosen_piece_place[1]] = 0
             if current_player=='white':
+                change_player('black')
                 current_player='black'
             else:
+                change_player('white')
                 current_player='white'
             draw_board()
         board_method="choose piece"
     draw_pices()
-        
 
+def randomMethod(event):
+    global possible_moves, choosen_piece_place, current_player, board
+    tile = [int(event.x//wPiece), int(event.y//hPiece)]
+    d = all_possible_moves(board, current_player)
+    choices = []
+    for i in d:
+        for j in d[i]:
+            choices.append([i, j])
+    choice = choices[np.random.choice(range(len(choices)))]
+    choosen_piece_place = choice[0]
+    tile = [choice[1][1], choice[1][0]]
+    board[tile[1]][tile[0]] = board[choosen_piece_place[0]][choosen_piece_place[1]]
+    board[choosen_piece_place[0]][choosen_piece_place[1]] = 0
+    if current_player=='white':
+        change_player('black')
+        current_player='black'
+    else:
+        change_player('white')
+        current_player='white'
+    draw_board()
+
+def callback(event):
+    global current_player
+    print(is_check(board))
+    if current_player=='white':
+        if whitePlayerMethod=='Player':
+            playerMethod(event)
+        elif whitePlayerMethod=='Random':
+            randomMethod(event)
+        if blackPlayerMethod!="Player" and current_player!='white':
+            callback(event)
+
+    elif current_player=='black':
+        if blackPlayerMethod=='Player':
+            playerMethod(event)
+        elif blackPlayerMethod=='Random':
+            randomMethod(event)
+        if whitePlayerMethod!="Player":
+            callback(event)
 
 draw_board()
 
